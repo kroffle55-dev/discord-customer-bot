@@ -53,7 +53,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
             {
               type: 4,
               custom_id: 'subject',
-              label: '문의 제목',
+              label: '제목',
               style: 1,
               required: true
             }
@@ -65,7 +65,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
             {
               type: 4,
               custom_id: 'content',
-              label: '문의 내용',
+              label: '내용',
               style: 2,
               required: true
             }
@@ -80,7 +80,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     const content = interaction.fields.getTextInputValue('content');
 
     await interaction.reply({
-      content: '✅ 문의가 정상적으로 접수되었습니다. 빠른 시일 내에 답변드릴게요!',
+      content: '✅ 문의가 정상적으로 접수되었습니다.',
       ephemeral: true
     });
 
