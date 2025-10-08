@@ -55,8 +55,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
               custom_id: 'subject',
               label: '문의 제목',
               style: 1,
-              min_length: 2,
-              max_length: 100,
               required: true
             }
           ]
@@ -69,8 +67,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
               custom_id: 'content',
               label: '문의 내용',
               style: 2,
-              min_length: 10,
-              max_length: 1000,
               required: true
             }
           ]
@@ -90,7 +86,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
     const logChannel = await client.channels.fetch('1425412015198965872');
     await logChannel.send({
-      content: `**📬 새로운 문의 접수됨**\n━━━━━━━━━━━━━━━━━━\n**제목:** ${subject}\n**내용:** ${content}\n**작성자:** <@${interaction.user.id}>`,
+      content: `📬 **새로운 문의 접수됨**\n━━━━━━━━━━━━━━━━━━\n**제목:** ${subject}\n**내용:** ${content}\n**작성자:** <@${interaction.user.id}>`,
       components: [
         {
           type: 1,
@@ -118,18 +114,52 @@ client.on(Events.InteractionCreate, async (interaction) => {
     const targetMessage = await interaction.message.fetch();
 
     if (action === 'reply') {
-      await interaction.reply({
-        content: '✏️ 답변을 작성해주세요:',
-        ephemeral: true
+      await interaction.showModal({
+        title: '답변 작성',
+        custom_id: `modal_reply_${userId}`,
+        components: [
+          {
+            type: 1,
+            components: [
+              {
+                type: 4,
+                custom_id: 'reply_content',
+                label: '답변 내용',
+                style: 2,
+                required: true
+              }
+            ]
+          }
+        ]
       });
     }
 
     if (action === 'delete') {
       await targetMessage.delete();
+
+      const logChannel = await client.channels.fetch('1425412015198965872');
+      await logChannel.send({
+        content: `🗑️ 해당 문의는 관리자에 의해 삭제되었습니다.\n━━━━━━━━━━━━━━━━━━\n**작성자:** <@${userId}>`
+      });
+
       await client.users.send(userId, {
-        content: '📪 문의가 관리자에 의해 처리되었습니다. 감사합니다!'
+        content: '📪 문의가 관리자에 의해 삭제되었습니다. 감사합니다!'
       });
     }
+  }
+
+  if (interaction.isModalSubmit() && interaction.customId.startsWith('modal_reply_')) {
+    const userId = interaction.customId.split('_')[2];
+    const replyContent = interaction.fields.getTextInputValue('reply_content');
+
+    await interaction.reply({
+      content: '✅ 답변이 전송되었습니다.',
+      ephemeral: true
+    });
+
+    await client.users.send(userId, {
+      content: `📢 고객센터 답변입니다:\n━━━━━━━━━━━━━━━━━━\n${replyContent}`
+    });
   }
 });
 
