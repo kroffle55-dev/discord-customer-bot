@@ -30,10 +30,16 @@ client.on(Events.MessageCreate, async (message) => {
           type: 1,
           components: [
             {
-              type: 2,
-              label: '문의하기',
-              style: 1,
-              custom_id: 'open_modal'
+              type: 3, // Select Menu
+              custom_id: 'inquiry_select',
+              placeholder: '고객센터 문의하기',
+              options: [
+                {
+                  label: 'ℹ️ 일반문의',
+                  value: 'open_modal',
+                  description: '고객센터 문의접수'
+                }
+              ]
             }
           ]
         }
@@ -43,58 +49,60 @@ client.on(Events.MessageCreate, async (message) => {
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
-  if (interaction.isButton() && interaction.customId === 'open_modal') {
-    await interaction.showModal({
-      title: '문의 접수하기',
-      custom_id: 'modal_support',
-      components: [
-        {
-          type: 1,
-          components: [
-            {
-              type: 4,
-              custom_id: 'subject',
-              label: '제목',
-              style: 1,
-              required: true
-            }
-          ]
-        },
-        {
-          type: 1,
-          components: [
-            {
-              type: 4,
-              custom_id: 'content',
-              label: '내용',
-              style: 2,
-              required: true
-            }
-          ]
-        }
-      ]
-    });
+  // 문의 드롭다운 선택
+  if (interaction.isStringSelectMenu() && interaction.customId === 'inquiry_select') {
+    const selected = interaction.values[0];
+    if (selected === 'open_modal') {
+      await interaction.showModal({
+        title: '문의 접수하기',
+        custom_id: 'modal_support',
+        components: [
+          {
+            type: 1,
+            components: [
+              {
+                type: 4,
+                custom_id: 'subject',
+                label: '제목',
+                style: 1,
+                required: true
+              }
+            ]
+          },
+          {
+            type: 1,
+            components: [
+              {
+                type: 4,
+                custom_id: 'content',
+                label: '내용',
+                style: 2,
+                required: true
+              }
+            ]
+          }
+        ]
+      });
+    }
   }
 
+  // 문의 모달 제출
   if (interaction.isModalSubmit() && interaction.customId === 'modal_support') {
     const subject = interaction.fields.getTextInputValue('subject');
     const content = interaction.fields.getTextInputValue('content');
 
     await interaction.reply({
-      content: '✅ __문의__가 정상적으로 __접수__되었습니다.',
+      content: '✅ 문의가 정상적으로 접수되었습니다.',
       ephemeral: true
     });
 
     const logChannel = await client.channels.fetch('1425412015198965872');
     const embed = new EmbedBuilder()
-      .setTitle('🔧 새 문의 접수됨')
-      .addFields(
-        { name: ' ', value: subject },
-        { name: ' ', value: content },
-        { name: 'by', value: `<@${interaction.user.id}>` }
-      )
-      .setFooter({ text: '☁️ 클라우드벳 | 디스코드 겜블 커뮤니티' })
-      .setColor(0x000000);
+     .setTitle('🔧 새 문의 접수됨')
+     .setDescription(`**${subject}**\n${content}\n\nby <@${interaction.user.id}>`)
+     .setFooter({ text: '☁️ 클라우드벳 | 디스코드 겜블 커뮤니티' })
+     .setColor(0x000000);
+
 
     await logChannel.send({
       embeds: [embed],
@@ -103,16 +111,21 @@ client.on(Events.InteractionCreate, async (interaction) => {
           type: 1,
           components: [
             {
-              type: 2,
-              label: '답변하기',
-              style: 1,
-              custom_id: `reply_${interaction.user.id}`
-            },
-            {
-              type: 2,
-              label: '삭제하기',
-              style: 4,
-              custom_id: `delete_${interaction.user.id}`
+              type: 3, // Select Menu
+              custom_id: `admin_action_${interaction.user.id}`,
+              placeholder: '작업 관리',
+              options: [
+                {
+                  label: '✅️ 답변등록',
+                  value: `reply_${interaction.user.id}`,
+                  description: '문의 답변 등록하기'
+                },
+                {
+                  label: '🔴 반려처리',
+                  value: `delete_${interaction.user.id}`,
+                  description: '문의 삭제처리 하기'
+                }
+              ]
             }
           ]
         }
@@ -120,8 +133,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
     });
   }
 
-  if (interaction.isButton()) {
-    const [action, userId] = interaction.customId.split('_');
+  // 관리자 드롭다운 선택
+  if (interaction.isStringSelectMenu() && interaction.customId.startsWith('admin_action_')) {
+    const selected = interaction.values[0];
+    const [action, userId] = selected.split('_');
     const targetMessage = await interaction.message.fetch();
 
     if (action === 'reply') {
@@ -137,7 +152,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 custom_id: 'reply_content',
                 label: '내용',
                 style: 2,
-                required: true // ✅ 최소 글자 제한 없음
+                required: true
               }
             ]
           }
@@ -148,14 +163,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
     if (action === 'delete') {
       await targetMessage.delete();
 
-      
-
       await client.users.send(userId, {
-        content: '**🔴 귀하께서 접수하신 문의사항이 반려 처리되었습니다, 감사합니다.**\n-# ☁️ 클라우드벳 커뮤니티 | 디스코드 겜블 커뮤니티' // ✅ 유저에게 DM으로 전송되는 메시지
+        content: '**🔴 귀하께서 접수하신 문의사항이 반려 처리되었습니다, 감사합니다.**\n-# ☁️ 클라우드벳 커뮤니티 | 디스코드 겜블 커뮤니티'
       });
     }
   }
 
+  // 답변 모달 제출
   if (interaction.isModalSubmit() && interaction.customId.startsWith('modal_reply_')) {
     const userId = interaction.customId.split('_')[2];
     const replyContent = interaction.fields.getTextInputValue('reply_content');
@@ -166,7 +180,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     });
 
     await client.users.send(userId, {
-      content: `**☁️ 귀하께서 접수하신 문의 답변이 등록되었습니다.**\n${replyContent}\n-# ☁️ 클라우드벳 커뮤니티 | 디스코드 겜블 커뮤니티` // ✅ 유저에게 DM으로 전송되는 답변 메시지
+      content: `**☁️ 귀하께서 접수하신 문의에 대한 답변이 등록되었습니다.**\n${replyContent}\n-# ☁️ 클라우드벳 커뮤니티 | 디스코드 겜블 커뮤니티`
     });
   }
 });
