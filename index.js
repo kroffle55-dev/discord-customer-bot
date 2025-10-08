@@ -18,9 +18,10 @@ client.once(Events.ClientReady, () => {
 client.on(Events.MessageCreate, async (message) => {
   if (message.content === '.고객센터설치') {
     const embed = new EmbedBuilder()
-      .setTitle('📩 고객센터 안내')
-      .setDescription('문의사항이 있으시면 아래 버튼을 눌러주세요.')
-      .setColor(0x5865F2);
+      .setTitle('☁️ 클라우드벳 커뮤니티 고객센터')
+      .setDescription('안녕하십니까, 클라우드벳 입니다.\n접수시 지원팀이 신속히 도와드리겠습니다.\n감사합니다.')
+      .setFooter({ text: '☁️ 클라우드벳 | 디스코드 겜블 커뮤니티' })
+      .setColor(0x000000);
 
     await message.channel.send({
       embeds: [embed],
@@ -44,7 +45,7 @@ client.on(Events.MessageCreate, async (message) => {
 client.on(Events.InteractionCreate, async (interaction) => {
   if (interaction.isButton() && interaction.customId === 'open_modal') {
     await interaction.showModal({
-      title: '문의 접수',
+      title: '문의 접수하기',
       custom_id: 'modal_support',
       components: [
         {
@@ -80,19 +81,20 @@ client.on(Events.InteractionCreate, async (interaction) => {
     const content = interaction.fields.getTextInputValue('content');
 
     await interaction.reply({
-      content: '✅ 문의가 정상적으로 접수되었습니다.',
+      content: '✅ __문의__가 정상적으로 __접수__되었습니다.',
       ephemeral: true
     });
 
     const logChannel = await client.channels.fetch('1425412015198965872');
     const embed = new EmbedBuilder()
-      .setTitle('📬 새로운 문의 접수됨')
+      .setTitle('🔧 새 문의 접수됨')
       .addFields(
-        { name: '제목', value: subject },
-        { name: '내용', value: content },
-        { name: '작성자', value: `<@${interaction.user.id}>` }
+        { name: ' ', value: subject },
+        { name: ' ', value: content },
+        { name: 'by', value: `<@${interaction.user.id}>` }
       )
-      .setColor(0x2ECC71);
+      .setFooter({ text: '☁️ 클라우드벳 | 디스코드 겜블 커뮤니티' })
+      .setColor(0x000000);
 
     await logChannel.send({
       embeds: [embed],
@@ -133,7 +135,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
               {
                 type: 4,
                 custom_id: 'reply_content',
-                label: '답변 내용',
+                label: '내용',
                 style: 2,
                 required: true // ✅ 최소 글자 제한 없음
               }
@@ -146,17 +148,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
     if (action === 'delete') {
       await targetMessage.delete();
 
-      const logChannel = await client.channels.fetch('1425412015198965872');
-      const embed = new EmbedBuilder()
-        .setTitle('🗑️ 문의 삭제됨')
-        .setDescription(`해당 문의는 관리자에 의해 삭제되었습니다.`)
-        .addFields({ name: '작성자', value: `<@${userId}>` })
-        .setColor(0xFF0000);
-
-      await logChannel.send({ embeds: [embed] });
+      
 
       await client.users.send(userId, {
-        content: '📪 문의가 관리자에 의해 삭제되었습니다. 감사합니다!' // ✅ 유저에게 DM으로 전송되는 메시지
+        content: '**🔴 귀하께서 접수하신 문의사항이 반려 처리되었습니다, 감사합니다.**\n-# ☁️ 클라우드벳 커뮤니티 | 디스코드 겜블 커뮤니티' // ✅ 유저에게 DM으로 전송되는 메시지
       });
     }
   }
@@ -166,12 +161,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
     const replyContent = interaction.fields.getTextInputValue('reply_content');
 
     await interaction.reply({
-      content: '✅ 답변이 전송되었습니다.',
+      content: '✅ 답변 등록됨.',
       ephemeral: true
     });
 
     await client.users.send(userId, {
-      content: `**☁️ 귀하께서 접수하신 문의 답변이 등록되었습니다.**\n${replyContent}\n-#감사합니다` // ✅ 유저에게 DM으로 전송되는 답변 메시지
+      content: `**☁️ 귀하께서 접수하신 문의 답변이 등록되었습니다.**\n${replyContent}\n-# ☁️ 클라우드벳 커뮤니티 | 디스코드 겜블 커뮤니티` // ✅ 유저에게 DM으로 전송되는 답변 메시지
     });
   }
 });
