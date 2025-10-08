@@ -29,7 +29,7 @@ require("./server");
 const 관리자역할ID = "1423885093310566421";
 
 // 관리자 채널 ID
-const 관리자채널ID = "123456789012345678"; // 여기에 관리자 채널 ID 입력
+const 관리자채널ID = "1425412015198965872"; // 여기에 관리자 채널 ID 입력
 
 client.once("ready", () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
