@@ -164,13 +164,22 @@ client.on(Events.InteractionCreate, async (interaction) => {
     const userId = interaction.customId.split('_')[2];
     const replyContent = interaction.fields.getTextInputValue('reply_content');
 
+    // 🔥 관리자 채널의 원래 메시지 삭제
+    try {
+      const adminChannel = await client.channels.fetch('1425412015198965872');
+      const originalMessage = await adminChannel.messages.fetch(interaction.message.id);
+      await originalMessage.delete();
+    } catch (err) {
+      console.error('메시지 삭제 실패:', err);
+    }
+
     await interaction.reply({
       content: '✅ 답변 등록됨.',
       ephemeral: true
     });
 
     await client.users.send(userId, {
-      content: `**☁️ 귀하께서 접수하신 문의에 대한 답변이 등록되었습니다.**\n${replyContent}\n-# ☁️ 클라우드벳 커뮤니티 | 디스코드 겜블 커뮤니티`
+      content: `**☁️ 귀하께서 접수하신 문의에 대한 답변이 등록되었습니다.**\n\n> ${replyContent}\n-# ☁️ 클라우드벳 커뮤니티 | 디스코드 겜블 커뮤니티`
     });
   }
 });
