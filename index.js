@@ -126,7 +126,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 custom_id: 'reply_content',
                 label: '답변 내용',
                 style: 2,
-                required: true
+                required: true // ✅ 최소 글자 제한 없음
               }
             ]
           }
@@ -143,7 +143,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       });
 
       await client.users.send(userId, {
-        content: '📪 문의가 관리자에 의해 삭제되었습니다. 감사합니다!'
+        content: '📪 문의가 관리자에 의해 삭제되었습니다. 감사합니다!' // ✅ 유저에게 문의 삭제 안내 메시지 전송
       });
     }
   }
