@@ -30,8 +30,8 @@ client.on(Events.MessageCreate, async (message) => {
           type: 1,
           components: [
             {
-              type: 2, // Button
-              label: '문의하기',
+              type: 2, // 버튼
+              label: 'ℹ️ 문의하기',
               style: 2, // 회색 버튼
               custom_id: 'open_modal'
             }
@@ -84,12 +84,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
     await interaction.reply({
       content: '✅ 문의가 정상적으로 접수되었습니다.',
-      flags: InteractionResponseFlags.Ephemeral
+      ephemeral: true
     });
 
     const logChannel = await client.channels.fetch('1425412015198965872');
     const embed = new EmbedBuilder()
-      .setTitle('🔧 새 문의 접수됨')
+      .setTitle('📥 새 문의 접수됨')
       .setDescription(`**${subject}**\n${content}\n\nby <@${interaction.user.id}>`)
       .setFooter({ text: '☁️ 클라우드벳 | 디스코드 겜블 커뮤니티' })
       .setColor(0x000000);
@@ -101,9 +101,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
           type: 1,
           components: [
             {
-              type: 3, // Select Menu
+              type: 3, // 드롭다운
               custom_id: `admin_action_${interaction.user.id}`,
-              placeholder: '작업 관리',
+              placeholder: '답변 작업관리',
               options: [
                 {
                   label: '✅️ 답변등록',
