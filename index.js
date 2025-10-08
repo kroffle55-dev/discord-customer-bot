@@ -30,16 +30,10 @@ client.on(Events.MessageCreate, async (message) => {
           type: 1,
           components: [
             {
-              type: 3, // Select Menu
-              custom_id: 'inquiry_select',
-              placeholder: '고객센터 문의하기',
-              options: [
-                {
-                  label: 'ℹ️ 일반문의',
-                  value: 'open_modal',
-                  description: '고객센터 문의접수'
-                }
-              ]
+              type: 2, // Button
+              label: '문의하기',
+              style: 2, // 회색 버튼
+              custom_id: 'open_modal'
             }
           ]
         }
@@ -49,41 +43,38 @@ client.on(Events.MessageCreate, async (message) => {
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
-  // 문의 드롭다운 선택
-  if (interaction.isStringSelectMenu() && interaction.customId === 'inquiry_select') {
-    const selected = interaction.values[0];
-    if (selected === 'open_modal') {
-      await interaction.showModal({
-        title: '문의 접수하기',
-        custom_id: 'modal_support',
-        components: [
-          {
-            type: 1,
-            components: [
-              {
-                type: 4,
-                custom_id: 'subject',
-                label: '제목',
-                style: 1,
-                required: true
-              }
-            ]
-          },
-          {
-            type: 1,
-            components: [
-              {
-                type: 4,
-                custom_id: 'content',
-                label: '내용',
-                style: 2,
-                required: true
-              }
-            ]
-          }
-        ]
-      });
-    }
+  // 고객 버튼 클릭 시 모달 열기
+  if (interaction.isButton() && interaction.customId === 'open_modal') {
+    await interaction.showModal({
+      title: '문의 접수하기',
+      custom_id: 'modal_support',
+      components: [
+        {
+          type: 1,
+          components: [
+            {
+              type: 4,
+              custom_id: 'subject',
+              label: '제목',
+              style: 1,
+              required: true
+            }
+          ]
+        },
+        {
+          type: 1,
+          components: [
+            {
+              type: 4,
+              custom_id: 'content',
+              label: '내용',
+              style: 2,
+              required: true
+            }
+          ]
+        }
+      ]
+    });
   }
 
   // 문의 모달 제출
@@ -93,16 +84,15 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
     await interaction.reply({
       content: '✅ 문의가 정상적으로 접수되었습니다.',
-      ephemeral: true
+      flags: InteractionResponseFlags.Ephemeral
     });
 
     const logChannel = await client.channels.fetch('1425412015198965872');
     const embed = new EmbedBuilder()
-     .setTitle('🔧 새 문의 접수됨')
-     .setDescription(`**${subject}**\n${content}\n\nby <@${interaction.user.id}>`)
-     .setFooter({ text: '☁️ 클라우드벳 | 디스코드 겜블 커뮤니티' })
-     .setColor(0x000000);
-
+      .setTitle('🔧 새 문의 접수됨')
+      .setDescription(`**${subject}**\n${content}\n\nby <@${interaction.user.id}>`)
+      .setFooter({ text: '☁️ 클라우드벳 | 디스코드 겜블 커뮤니티' })
+      .setColor(0x000000);
 
     await logChannel.send({
       embeds: [embed],
