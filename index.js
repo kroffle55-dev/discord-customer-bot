@@ -23,16 +23,19 @@ client.once(Events.ClientReady, () => {
 client.on(Events.MessageCreate, async (message) => {
   if (message.content === '.고객센터설치') {
     await message.channel.send({
-      content: '**고객센터**\n안녕하십니까',
+      content: '**📩 고객센터 안내**\n문의사항이 있으시면 아래 버튼을 눌러주세요.',
       components: [
-        [
-          {
-            type: 2,
-            label: '문의하기',
-            style: 1,
-            custom_id: 'open_modal'
-          }
-        ]
+        {
+          type: 1,
+          components: [
+            {
+              type: 2,
+              label: '문의하기',
+              style: 1,
+              custom_id: 'open_modal'
+            }
+          ]
+        }
       ]
     });
   }
@@ -41,7 +44,7 @@ client.on(Events.MessageCreate, async (message) => {
 client.on(Events.InteractionCreate, async (interaction) => {
   if (interaction.isButton() && interaction.customId === 'open_modal') {
     await interaction.showModal({
-      title: '문의 접수하기',
+      title: '문의 접수',
       custom_id: 'modal_support',
       components: [
         {
@@ -50,7 +53,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
             {
               type: 4,
               custom_id: 'subject',
-              label: '제목',
+              label: '문의 제목',
               style: 1,
               min_length: 2,
               max_length: 100,
@@ -64,7 +67,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
             {
               type: 4,
               custom_id: 'content',
-              label: '내용',
+              label: '문의 내용',
               style: 2,
               min_length: 10,
               max_length: 1000,
@@ -81,28 +84,31 @@ client.on(Events.InteractionCreate, async (interaction) => {
     const content = interaction.fields.getTextInputValue('content');
 
     await interaction.reply({
-      content: '✅ 문의가 정상적으로 접수되었습니다. 빠른 시일 내에 답변드리겠습니다.',
+      content: '✅ 문의가 정상적으로 접수되었습니다. 빠른 시일 내에 답변드릴게요!',
       ephemeral: true
     });
 
     const logChannel = await client.channels.fetch('1425412015198965872');
     await logChannel.send({
-      content: `**✅️ 새로운 문의 접수됨**\n━━━━━━━━━━━━━━━━━━\n**제목:** ${subject}\n**내용:** ${content}\n**작성자:** <@${interaction.user.id}>`,
+      content: `**📬 새로운 문의 접수됨**\n━━━━━━━━━━━━━━━━━━\n**제목:** ${subject}\n**내용:** ${content}\n**작성자:** <@${interaction.user.id}>`,
       components: [
-        [
-          {
-            type: 2,
-            label: '답변하기',
-            style: 1,
-            custom_id: `reply_${interaction.user.id}`
-          },
-          {
-            type: 2,
-            label: '삭제하기',
-            style: 4,
-            custom_id: `delete_${interaction.user.id}`
-          }
-        ]
+        {
+          type: 1,
+          components: [
+            {
+              type: 2,
+              label: '답변하기',
+              style: 1,
+              custom_id: `reply_${interaction.user.id}`
+            },
+            {
+              type: 2,
+              label: '삭제하기',
+              style: 4,
+              custom_id: `delete_${interaction.user.id}`
+            }
+          ]
+        }
       ]
     });
   }
@@ -113,7 +119,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
     if (action === 'reply') {
       await interaction.reply({
-        content: '답변을 작성:',
+        content: '✏️ 답변을 작성해주세요:',
         ephemeral: true
       });
     }
@@ -121,7 +127,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     if (action === 'delete') {
       await targetMessage.delete();
       await client.users.send(userId, {
-        content: '✅️ 귀하의 문의 내역이 처리되었습니다, 감사합니다.'
+        content: '📪 문의가 관리자에 의해 처리되었습니다. 감사합니다!'
       });
     }
   }
