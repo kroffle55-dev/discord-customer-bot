@@ -1,5 +1,4 @@
-const { Client, GatewayIntentBits, Events } = require('discord.js');
-const express = require('express');
+const { Client, GatewayIntentBits, Events, EmbedBuilder } = require('discord.js');
 require('dotenv').config();
 
 const client = new Client({
@@ -12,18 +11,19 @@ const client = new Client({
   partials: ['CHANNEL']
 });
 
-const app = express();
-app.get('/', (req, res) => res.send('Bot is running'));
-app.listen(3000, () => console.log('Web server running on port 3000'));
-
 client.once(Events.ClientReady, () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
 });
 
 client.on(Events.MessageCreate, async (message) => {
   if (message.content === '.고객센터설치') {
+    const embed = new EmbedBuilder()
+      .setTitle('📩 고객센터 안내')
+      .setDescription('문의사항이 있으시면 아래 버튼을 눌러주세요.')
+      .setColor(0x5865F2);
+
     await message.channel.send({
-      content: '**📩 고객센터 안내**\n문의사항이 있으시면 아래 버튼을 눌러주세요.',
+      embeds: [embed],
       components: [
         {
           type: 1,
@@ -85,8 +85,17 @@ client.on(Events.InteractionCreate, async (interaction) => {
     });
 
     const logChannel = await client.channels.fetch('1425412015198965872');
+    const embed = new EmbedBuilder()
+      .setTitle('📬 새로운 문의 접수됨')
+      .addFields(
+        { name: '제목', value: subject },
+        { name: '내용', value: content },
+        { name: '작성자', value: `<@${interaction.user.id}>` }
+      )
+      .setColor(0x2ECC71);
+
     await logChannel.send({
-      content: `📬 **새로운 문의 접수됨**\n━━━━━━━━━━━━━━━━━━\n**제목:** ${subject}\n**내용:** ${content}\n**작성자:** <@${interaction.user.id}>`,
+      embeds: [embed],
       components: [
         {
           type: 1,
@@ -138,12 +147,16 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await targetMessage.delete();
 
       const logChannel = await client.channels.fetch('1425412015198965872');
-      await logChannel.send({
-        content: `🗑️ 해당 문의는 관리자에 의해 삭제되었습니다.\n━━━━━━━━━━━━━━━━━━\n**작성자:** <@${userId}>`
-      });
+      const embed = new EmbedBuilder()
+        .setTitle('🗑️ 문의 삭제됨')
+        .setDescription(`해당 문의는 관리자에 의해 삭제되었습니다.`)
+        .addFields({ name: '작성자', value: `<@${userId}>` })
+        .setColor(0xFF0000);
+
+      await logChannel.send({ embeds: [embed] });
 
       await client.users.send(userId, {
-        content: '📪 문의가 관리자에 의해 삭제되었습니다. 감사합니다!' // ✅ 유저에게 문의 삭제 안내 메시지 전송
+        content: '📪 문의가 관리자에 의해 삭제되었습니다. 감사합니다!' // ✅ 유저에게 DM으로 전송되는 메시지
       });
     }
   }
@@ -158,7 +171,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     });
 
     await client.users.send(userId, {
-      content: `📢 고객센터 답변입니다:\n━━━━━━━━━━━━━━━━━━\n${replyContent}`
+      content: `**☁️ 귀하께서 접수하신 문의 답변이 등록되었습니다.**\n${replyContent}\n-#감사합니다` // ✅ 유저에게 DM으로 전송되는 답변 메시지
     });
   }
 });
