@@ -179,7 +179,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     });
 
     await client.users.send(userId, {
-      content: `**☁️ 귀하께서 접수하신 문의에 대한 답변이 등록되었습니다.**\n\n> ${replyContent}\n-# ☁️ 클라우드벳 커뮤니티 | 디스코드 겜블 커뮤니티`
+      content: `**☁️ 귀하께서 접수하신 문의에 대한 답변이 등록되었습니다.**\n\n> ${replyContent}\n\n-# ☁️ 클라우드벳 커뮤니티 | 디스코드 겜블 커뮤니티`
     });
   }
 });
