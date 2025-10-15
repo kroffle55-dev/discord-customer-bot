@@ -187,3 +187,17 @@ client.on(Events.InteractionCreate, async (interaction) => {
 client.login(process.env.TOKEN);
 
 require('./server');
+
+
+// ✅ Koyeb용 웹 서버 추가
+const express = require('express');
+const app = express();
+
+app.get('/', (req, res) => {
+  res.send('Bot is running!');
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Web server running on port ${PORT}`);
+});
