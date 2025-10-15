@@ -186,7 +186,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
 client.login(process.env.TOKEN);
 
-require('./server');
+//require('./server');     필요없음
 
 
 // ✅ Koyeb용 웹 서버 추가
