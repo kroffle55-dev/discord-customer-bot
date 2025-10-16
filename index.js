@@ -87,7 +87,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       ephemeral: true
     });
 
-    const logChannel = await client.channels.fetch('1425412015198965872');
+    const logChannel = await client.channels.fetch('1428277669409067120');
     const embed = new EmbedBuilder()
       .setTitle('📥 새 문의 접수됨')
       .setDescription(`**${subject}**\n${content}\n\nby <@${interaction.user.id}>`)
