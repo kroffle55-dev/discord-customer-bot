@@ -85,8 +85,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
       .setCustomId('select_inquiry_type')
       .setPlaceholder('문의 유형을 선택하세요.')
       .addOptions([
-        { label: '🛒 상품구매', description: '상품 구매를 위한 주문서를 작성합니다.', value: 'product_purchase' },
-        { label: '💬 일반문의', description: '서비스 관련 일반 문의를 작성합니다.', value: 'general_inquiry' },
+        { label: '💳 상품구매', description: '상품 구매신청', value: 'product_purchase' },
+        { label: 'ℹ️ 서비스 문의', description: '서비스 관련 문의 작성', value: 'general_inquiry' },
       ]);
     const row = new ActionRowBuilder().addComponents(selectMenu);
     await interaction.reply({ content: '원하시는 문의 유형을 선택해주세요.', components: [row], ephemeral: true });
@@ -97,7 +97,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     const selectedType = interaction.values[0];
 
     if (selectedType === 'general_inquiry') {
-      const modal = new ModalBuilder().setCustomId('modal_support').setTitle('일반 문의 접수하기');
+      const modal = new ModalBuilder().setCustomId('modal_support').setTitle('서비스 문의 접수하기');
       modal.addComponents(
         new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('subject').setLabel("제목").setStyle(TextInputStyle.Short).setRequired(true)),
         new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('content').setLabel("내용").setStyle(TextInputStyle.Paragraph).setRequired(true))
@@ -144,10 +144,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
       phone: interaction.fields.getTextInputValue('purchase_phone'),
       address: interaction.fields.getTextInputValue('purchase_address'),
     };
-    await interaction.reply({ content: '✅ 구매 요청이 정상적으로 접수되었습니다. DM으로 입금계좌가 전송되었습니다. 감사합니다.', ephemeral: true });
+    await interaction.reply({ content: '✅ 구매 요청이 정상적으로 접수되었습니다.\nDM으로 입금계좌가 전송되었습니다.', ephemeral: true });
     
     // 유저에게 계좌번호 DM 발송
-    await sendDmEmbed(interaction.user.id, '가상계좌 입금안내', '아래 입금계좌로 송금해주시기 바랍니다.\n은행명 ``SC제일``\n계좌번호 ``라이브챗 문의``\n예금주 ``라이브챗 문의``\n-# 입금계좌는 수시로 변동됩니다. 오송금시 환불 불가입니다.\n해당 계좌는 24시간 추적되고 있습니다.\n금융범죄 (3자사기등)에 사용시 즉시 금감원에 보고되며 민형사상 처벌을 받을수 있습니다.', EMBED_COLORS.INFO);
+    await sendDmEmbed(interaction.user.id, '가상계좌 입금안내', '아래 입금계좌로 송금해주시기 바랍니다.\n- 은행명\n``SC제일``\n- 계좌번호\n``라이브챗 문의``\n- 예금주\n``라이브챗 문의``\n-# 입금계좌는 수시로 변동됩니다. 오송금시 환불 불가입니다.\n-# 해당 계좌는 24시간 추적되고 있습니다.\n-# 금융범죄 (3자사기등)에 사용시 즉시 금감원에 보고되며 민형사상 처벌을 받을수 있습니다.', EMBED_COLORS.INFO);
 
     const logChannel = await client.channels.fetch(PRODUCT_PURCHASE_LOG_CHANNEL_ID);
     const hiddenData = JSON.stringify(purchaseData);
@@ -182,8 +182,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await interaction.showModal(modal);
     } else if (action === 'delete') {
       await interaction.message.delete();
-      await interaction.reply({ content: '해당 문의를 반려처리했습니다.', ephemeral: true });
-      await sendDmEmbed(userId, '🔴 문의 반려', '귀하께서 접수하신 문의사항이 반려 처리되었습니다.\n감사합니다.', EMBED_COLORS.ERROR);
+      await interaction.reply({ content: '귀하의 문의사항에 대한 답변 등록', ephemeral: true });
+      await sendDmEmbed(userId, '문의 반려처리됨.','자세한 사항은 고객센터 문의 바랍니다.\n감사합니다.', EMBED_COLORS.ERROR);
     }
   }
 
@@ -195,7 +195,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     if (action === 'confirm') {
       const newDropdown = new ActionRowBuilder().addComponents(
         new StringSelectMenuBuilder().setCustomId(`admin_action_shipping_${userId}`).setPlaceholder('배송 작업관리').addOptions([
-          { label: '🚚 배송완료', value: `shipped_${userId}` }
+          { label: '🟢 배송완료', value: `shipped_${userId}` }
         ])
       );
       await interaction.update({ components: [newDropdown] });
@@ -239,7 +239,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     const replyContent = interaction.fields.getTextInputValue('reply_content');
     await interaction.message.delete();
     await interaction.reply({ content: '✅ 답변이 등록되었습니다.', ephemeral: true });
-    await sendDmEmbed(userId, '🟢 문의에 대한 답변이 도착했습니다!', replyContent, EMBED_COLORS.SUCCESS);
+    await sendDmEmbed(userId, '🟢 문의에 대한 답변 등록이 완료되었습니다.', replyContent, EMBED_COLORS.SUCCESS);
   }
 });
 
