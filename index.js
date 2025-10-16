@@ -9,7 +9,9 @@ const {
   StringSelectMenuBuilder, 
   ModalBuilder, 
   TextInputBuilder, 
-  TextInputStyle 
+  TextInputStyle,
+  ChannelType,
+  PermissionsBitField
 } = require('discord.js');
 require('dotenv').config();
 
@@ -23,11 +25,12 @@ const client = new Client({
   partials: ['CHANNEL']
 });
 
-// --- 채널 ID 설정 ---
-const GENERAL_INQUIRY_LOG_CHANNEL_ID = '1428277669409067120'; // 일반 문의 로그 채널
-const PRODUCT_PURCHASE_LOG_CHANNEL_ID = '1428345973993898054'; // 상품 구매 로그 채널
+// --- 설정 ---
+const GENERAL_INQUIRY_LOG_CHANNEL_ID = '1428277669409067120';
+const PRODUCT_PURCHASE_LOG_CHANNEL_ID = '1428345973993898054';
+const LIVE_CHAT_CATEGORY_ID = '1379505387954376766'; // 라이브챗 채널이 생성될 카테고리 ID
+const LIVE_CHAT_ADMIN_ROLES = ['1379505785725517976', '1379505546172039188']; // 관리자 역할 ID 목록
 
-// --- 임베드 색상 설정 ---
 const EMBED_COLORS = {
   DEFAULT: '#000000',
   SUCCESS: '#57F287',
@@ -49,7 +52,6 @@ async function sendDmEmbed(userId, title, description, color = EMBED_COLORS.DEFA
     await user.send({ embeds: [embed] });
   } catch (error) {
     console.error(`[DM 전송 실패] User ID: ${userId}, Error: ${error.message}`);
-    // DM 발송 실패 시 추가적인 처리가 필요하다면 여기에 작성 (예: 특정 채널에 로그 남기기)
   }
 }
 
@@ -87,6 +89,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       .addOptions([
         { label: '💳 상품구매', description: '상품 구매신청', value: 'product_purchase' },
         { label: 'ℹ️ 서비스 문의', description: '서비스 관련 문의 작성', value: 'general_inquiry' },
+        { label: '💬 라이브챗', description: '실시간 채팅 상담', value: 'live_chat' }, // 라이브챗 옵션 추가
       ]);
     const row = new ActionRowBuilder().addComponents(selectMenu);
     await interaction.reply({ content: '원하시는 문의 유형을 선택해주세요.', components: [row], ephemeral: true });
@@ -112,8 +115,74 @@ client.on(Events.InteractionCreate, async (interaction) => {
         new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('purchase_address').setLabel("배송지 정보").setStyle(TextInputStyle.Paragraph).setRequired(true).setPlaceholder('배송지 상세주소, 배송 요구사항 기입'))
       );
       await interaction.showModal(modal);
+    } else if (selectedType === 'live_chat') {
+      const modal = new ModalBuilder().setCustomId('modal_livechat').setTitle('라이브챗 문의하기');
+      modal.addComponents(
+        new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('livechat_title').setLabel("제목").setStyle(TextInputStyle.Short).setRequired(true)),
+        new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('livechat_content').setLabel("문의내용").setStyle(TextInputStyle.Paragraph).setRequired(true))
+      );
+      await interaction.showModal(modal);
     }
   }
+
+  // --- 라이브챗 모달 제출 (티켓 생성) ---
+  if (interaction.isModalSubmit() && interaction.customId === 'modal_livechat') {
+    const title = interaction.fields.getTextInputValue('livechat_title');
+    const content = interaction.fields.getTextInputValue('livechat_content');
+    const userName = interaction.user.username;
+
+    try {
+      await interaction.reply({ content: '라이브챗 채널을 생성 중입니다...', ephemeral: true });
+
+      const permissionOverwrites = [
+        { id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] }, // @everyone 숨기기
+        { id: interaction.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // 티켓 생성자 권한
+      ];
+      LIVE_CHAT_ADMIN_ROLES.forEach(roleId => {
+        permissionOverwrites.push({ id: roleId, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory, PermissionsBitField.Flags.ManageMessages] });
+      });
+
+      const channel = await interaction.guild.channels.create({
+        name: `라이브챗-${userName}`,
+        type: ChannelType.GuildText,
+        parent: LIVE_CHAT_CATEGORY_ID,
+        permissionOverwrites: permissionOverwrites,
+      });
+
+      await interaction.editReply({ content: `✅ 라이브챗이 성공적으로 생성되었습니다: ${channel}` });
+
+      const embed = new EmbedBuilder()
+        .setTitle(`라이브챗 - ${interaction.member.displayName}`)
+        .setDescription(`라이브챗 문의가 시작되었습니다.\n\n**${title}**\n${content}`)
+        .setColor(EMBED_COLORS.INFO)
+        .setFooter({ text: '⚡️AP | 에이피 베이프' });
+      
+      const closeButton = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId('close_livechat')
+          .setLabel('라이브챗 종료')
+          .setStyle(ButtonStyle.Danger)
+      );
+
+      await channel.send({ embeds: [embed], components: [closeButton] });
+    } catch (error) {
+      console.error("라이브챗 채널 생성 실패:", error);
+      await interaction.editReply({ content: '오류: 라이브챗 채널을 생성하는 데 실패했습니다.', ephemeral: true });
+    }
+  }
+
+  // --- 라이브챗 종료 버튼 ---
+  if (interaction.isButton() && interaction.customId === 'close_livechat') {
+      // 채널 이름이 '라이브챗-'으로 시작하는지 확인하여 안전하게 삭제
+      if (interaction.channel.name.startsWith('라이브챗-')) {
+          await interaction.reply({ content: '5초 후 이 채널을 삭제합니다.', ephemeral: false });
+          setTimeout(() => interaction.channel.delete(), 5000);
+      } else {
+          await interaction.reply({ content: '이 버튼은 라이브챗 채널에서만 사용할 수 있습니다.', ephemeral: true });
+      }
+  }
+
+  // --- 이하 기존 코드 ---
 
   // --- 일반 문의 모달 제출 ---
   if (interaction.isModalSubmit() && interaction.customId === 'modal_support') {
@@ -146,7 +215,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
     };
     await interaction.reply({ content: '✅ 구매 요청이 정상적으로 접수되었습니다.\nDM으로 입금계좌가 전송되었습니다.', ephemeral: true });
     
-    // 유저에게 계좌번호 DM 발송
     await sendDmEmbed(interaction.user.id, '가상계좌 입금안내', '아래 입금계좌로 송금해주시기 바랍니다.\n- 은행명\n``SC제일``\n- 계좌번호\n``라이브챗 문의``\n- 예금주\n``라이브챗 문의``\n-# 입금계좌는 수시로 변동됩니다. 오송금시 환불 불가입니다.\n-# 해당 계좌는 24시간 추적되고 있습니다.\n-# 금융범죄 (3자사기등)에 사용시 즉시 금감원에 보고되며 민형사상 처벌을 받을수 있습니다.', EMBED_COLORS.INFO);
 
     const logChannel = await client.channels.fetch(PRODUCT_PURCHASE_LOG_CHANNEL_ID);
@@ -190,7 +258,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
   // --- 상품구매 관리자 액션 (접수/취소) ---
   if (interaction.isStringSelectMenu() && interaction.customId.startsWith('admin_action_purchase_')) {
     const [action, userId] = interaction.values[0].split('_');
-    const originalEmbed = interaction.message.embeds[0];
     
     if (action === 'confirm') {
       const newDropdown = new ActionRowBuilder().addComponents(
