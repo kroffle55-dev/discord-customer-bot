@@ -91,7 +91,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     const embed = new EmbedBuilder()
       .setTitle('📥 새 문의 접수됨')
       .setDescription(`**${subject}**\n${content}\n\nby <@${interaction.user.id}>`)
-      .setFooter({ text: '☁️ 클라우드벳 | 디스코드 겜블 커뮤니티' })
+      .setFooter({ text: '⚡️AP | 에이피 베이프' })
       .setColor(0x000000);
 
     await logChannel.send({
@@ -154,7 +154,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await targetMessage.delete();
 
       await client.users.send(userId, {
-        content: '**🔴 귀하께서 접수하신 문의사항이 반려 처리되었습니다, 감사합니다.**\n-# ☁️ 클라우드벳 커뮤니티 | 디스코드 겜블 커뮤니티'
+        content: '**🔴 귀하께서 접수하신 문의사항이 반려 처리되었습니다, 감사합니다.**\n-# ⚡️AP | 에이피 베이프'
       });
     }
   }
@@ -179,7 +179,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     });
 
     await client.users.send(userId, {
-      content: `**☁️ 귀하께서 접수하신 문의에 대한 답변이 등록되었습니다.**\n\n> ${replyContent}\n\n-# ☁️ 클라우드벳 커뮤니티 | 디스코드 겜블 커뮤니티`
+      content: `**🟢 답변 등록 완료!**\n${replyContent}`
     });
   }
 });
