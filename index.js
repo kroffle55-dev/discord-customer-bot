@@ -55,8 +55,8 @@ client.once(Events.ClientReady, () => {
 
 client.on(Events.MessageCreate, async (message) => {
   if (message.content === '.고객센터설치') {
-    const embed = new EmbedBuilder().setTitle('⚡️에이피 고객센터').setDescription('안녕하십니까, 에이피 입니다.\n접수시 지원팀이 신속히 도와드리겠습니다.\n감사합니다.').setFooter({ text: '⚡️AP | 에이피 베이프' }).setColor(EMBED_COLORS.DEFAULT);
-    const row = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('open_inquiry_selector').setLabel('ℹ️ 문의하기').setStyle(ButtonStyle.Secondary));
+    const embed = new EmbedBuilder().setTitle('⚡️에이피 고객센터').setDescription('에이피 고객지원 센터 입니다.').setFooter({ text: '⚡️AP | 에이피 베이프' }).setColor(EMBED_COLORS.DEFAULT);
+    const row = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('open_inquiry_selector').setLabel('ℹ️ 접수하기').setStyle(ButtonStyle.Secondary));
     await message.channel.send({ embeds: [embed], components: [row] });
   }
 });
@@ -125,12 +125,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
             permissionOverwrites: permissionOverwrites,
         });
 
-        await interaction.editReply({ content: `✅ 라이브챗이 성공적으로 생성되었습니다: ${channel}` });
+        await interaction.editReply({ content: `✅ 라이브챗 생성이 완료되었습니다 → ${channel}` });
 
-        const embed = new EmbedBuilder().setTitle(`라이브챗 - ${interaction.member.displayName}`).setDescription(`라이브챗 문의가 시작되었습니다.\n\n**${title}**\n${content}`).setColor(EMBED_COLORS.INFO).setFooter({ text: '⚡️AP | 에이피 베이프' });
+        const embed = new EmbedBuilder().setTitle(`라이브챗 - ${interaction.member.displayName}`).setDescription(`라이브챗 생성됨\n\n**${title}**\n${content}`).setColor(EMBED_COLORS.INFO).setFooter({ text: '⚡️AP | 에이피 베이프' });
         const closeButton = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('close_livechat').setLabel('라이브챗 종료').setStyle(ButtonStyle.Danger));
         const adminPing = LIVE_CHAT_ADMIN_ROLES.map(id => `<@&${id}>`).join(' ');
-        await channel.send({ content: `${adminPing}, 새로운 라이브챗 문의가 도착했습니다.`, embeds: [embed], components: [closeButton] });
+        await channel.send({ content: `${adminPing}, 새 라이브챗 생성됨`, embeds: [embed], components: [closeButton] });
 
     } catch (error) {
         console.error("라이브챗 채널 생성 실패:", error);
@@ -141,10 +141,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
   // --- 라이브챗 종료 ---
   if (interaction.isButton() && interaction.customId === 'close_livechat') {
       if (interaction.channel.name.startsWith('라이브챗-')) {
-          await interaction.reply({ content: '5초 후 이 채널을 삭제합니다.', ephemeral: false });
+          await interaction.reply({ content: '```⚠️ 잠시 후 해당 라이브챗이 삭제됩니다.```', ephemeral: false });
           setTimeout(() => interaction.channel.delete().catch(console.error), 5000);
       } else {
-          await interaction.reply({ content: '이 버튼은 라이브챗 채널에서만 사용할 수 있습니다.', ephemeral: true });
+          await interaction.reply({ content: '라이브챗 전용 버튼입니다.', ephemeral: true });
       }
   }
 
