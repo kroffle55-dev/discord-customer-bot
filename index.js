@@ -144,15 +144,15 @@ client.on(Events.InteractionCreate, async (interaction) => {
       phone: interaction.fields.getTextInputValue('purchase_phone'),
       address: interaction.fields.getTextInputValue('purchase_address'),
     };
-    await interaction.reply({ content: '✅ 상품 구매 요청이 정상적으로 접수되었습니다. DM을 확인해주세요.', ephemeral: true });
+    await interaction.reply({ content: '✅ 구매 요청이 정상적으로 접수되었습니다. DM으로 입금계좌가 전송되었습니다. 감사합니다.', ephemeral: true });
     
     // 유저에게 계좌번호 DM 발송
-    await sendDmEmbed(interaction.user.id, '🛒 상품 구매 신청 완료', '신청해주셔서 감사합니다.\n아래 계좌로 입금 후 잠시만 기다려주세요.\n\n`[은행명] 1234-5678-90123 (예금주: 에이피)`', EMBED_COLORS.INFO);
+    await sendDmEmbed(interaction.user.id, '가상계좌 입금안내', '아래 입금계좌로 송금해주시기 바랍니다.\n은행명 ``SC제일``\n계좌번호 ``라이브챗 문의``\n예금주 ``라이브챗 문의``\n-# 입금계좌는 수시로 변동됩니다. 오송금시 환불 불가입니다.\n해당 계좌는 24시간 추적되고 있습니다.\n금융범죄 (3자사기등)에 사용시 즉시 금감원에 보고되며 민형사상 처벌을 받을수 있습니다.', EMBED_COLORS.INFO);
 
     const logChannel = await client.channels.fetch(PRODUCT_PURCHASE_LOG_CHANNEL_ID);
     const hiddenData = JSON.stringify(purchaseData);
     const embed = new EmbedBuilder()
-      .setTitle('🛒 상품구매 리퀘스트')
+      .setTitle('🟢 상품구매 리퀘스트')
       .addFields(
         { name: '신청자', value: `<@${interaction.user.id}> (\`${interaction.user.tag}\`)`, inline: false },
         { name: '상품명', value: purchaseData.productName, inline: false },
