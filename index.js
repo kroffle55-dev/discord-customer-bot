@@ -18,9 +18,9 @@ client.once(Events.ClientReady, () => {
 client.on(Events.MessageCreate, async (message) => {
   if (message.content === '.고객센터설치') {
     const embed = new EmbedBuilder()
-      .setTitle(':AP: 에이피 고객센터')
+      .setTitle('⚡️에이피 고객센터')
       .setDescription('안녕하십니까, 에이피 입니다.\n접수시 지원팀이 신속히 도와드리겠습니다.\n감사합니다.')
-      .setFooter({ text: ':AP: AP | 에이피 베이프' })
+      .setFooter({ text: '⚡️AP | 에이피 베이프' })
       .setColor(0x000000);
 
     await message.channel.send({
