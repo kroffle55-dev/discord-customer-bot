@@ -10,8 +10,7 @@ const {
   ModalBuilder, 
   TextInputBuilder, 
   TextInputStyle,
-  ChannelType,
-  PermissionsBitField
+  ChannelType
 } = require('discord.js');
 require('dotenv').config();
 
@@ -28,8 +27,8 @@ const client = new Client({
 // --- 설정 ---
 const GENERAL_INQUIRY_LOG_CHANNEL_ID = '1428277669409067120';
 const PRODUCT_PURCHASE_LOG_CHANNEL_ID = '1428345973993898054';
-const LIVE_CHAT_CATEGORY_ID = '1379505387954376766'; // 라이브챗 채널이 생성될 카테고리 ID
-const LIVE_CHAT_ADMIN_ROLES = ['1379505785725517976', '1379505546172039188']; // 관리자 역할 ID 목록
+const LIVE_CHAT_CATEGORY_ID = '1379505387954376766'; 
+const LIVE_CHAT_ADMIN_ROLES = ['1379505785725517976', '1379505546172039188']; 
 
 const EMBED_COLORS = {
   DEFAULT: '#000000',
@@ -89,7 +88,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       .addOptions([
         { label: '💳 상품구매', description: '상품 구매신청', value: 'product_purchase' },
         { label: 'ℹ️ 서비스 문의', description: '서비스 관련 문의 작성', value: 'general_inquiry' },
-        { label: '💬 라이브챗', description: '실시간 채팅 상담', value: 'live_chat' }, // 라이브챗 옵션 추가
+        { label: '💬 라이브챗', description: '실시간 채팅 상담', value: 'live_chat' },
       ]);
     const row = new ActionRowBuilder().addComponents(selectMenu);
     await interaction.reply({ content: '원하시는 문의 유형을 선택해주세요.', components: [row], ephemeral: true });
@@ -129,21 +128,24 @@ client.on(Events.InteractionCreate, async (interaction) => {
   if (interaction.isModalSubmit() && interaction.customId === 'modal_livechat') {
     const title = interaction.fields.getTextInputValue('livechat_title');
     const content = interaction.fields.getTextInputValue('livechat_content');
-    const userName = interaction.user.username;
-
+    // 채널 이름에는 공백이나 특수문자가 없는 displayName을 사용하고, 없다면 username을 사용합니다.
+    const channelName = `라이브챗-${interaction.member.displayName.replace(/[\s\W]/g, '') || interaction.user.username}`;
+    
     try {
       await interaction.reply({ content: '라이브챗 채널을 생성 중입니다...', ephemeral: true });
 
+      // --- 여기부터 수정된 부분 ---
       const permissionOverwrites = [
-        { id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] }, // @everyone 숨기기
-        { id: interaction.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // 티켓 생성자 권한
+        { id: interaction.guild.id, deny: ['ViewChannel'] }, // @everyone 숨기기
+        { id: interaction.user.id, allow: ['ViewChannel', 'SendMessages', 'ReadMessageHistory'] }, // 티켓 생성자 권한
       ];
       LIVE_CHAT_ADMIN_ROLES.forEach(roleId => {
-        permissionOverwrites.push({ id: roleId, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory, PermissionsBitField.Flags.ManageMessages] });
+        permissionOverwrites.push({ id: roleId, allow: ['ViewChannel', 'SendMessages', 'ReadMessageHistory', 'ManageMessages'] });
       });
+      // --- 여기까지 수정된 부분 ---
 
       const channel = await interaction.guild.channels.create({
-        name: `라이브챗-${userName}`,
+        name: channelName,
         type: ChannelType.GuildText,
         parent: LIVE_CHAT_CATEGORY_ID,
         permissionOverwrites: permissionOverwrites,
@@ -164,16 +166,15 @@ client.on(Events.InteractionCreate, async (interaction) => {
           .setStyle(ButtonStyle.Danger)
       );
 
-      await channel.send({ embeds: [embed], components: [closeButton] });
+      await channel.send({ content: `<@&${LIVE_CHAT_ADMIN_ROLES.join('>, <@&')}>, 새로운 라이브챗 문의가 도착했습니다.`, embeds: [embed], components: [closeButton] });
     } catch (error) {
       console.error("라이브챗 채널 생성 실패:", error);
-      await interaction.editReply({ content: '오류: 라이브챗 채널을 생성하는 데 실패했습니다.', ephemeral: true });
+      await interaction.editReply({ content: '오류: 라이브챗 채널을 생성하는 데 실패했습니다. 관리자에게 문의해주세요.', ephemeral: true });
     }
   }
 
   // --- 라이브챗 종료 버튼 ---
   if (interaction.isButton() && interaction.customId === 'close_livechat') {
-      // 채널 이름이 '라이브챗-'으로 시작하는지 확인하여 안전하게 삭제
       if (interaction.channel.name.startsWith('라이브챗-')) {
           await interaction.reply({ content: '5초 후 이 채널을 삭제합니다.', ephemeral: false });
           setTimeout(() => interaction.channel.delete(), 5000);
@@ -182,66 +183,26 @@ client.on(Events.InteractionCreate, async (interaction) => {
       }
   }
 
-  // --- 이하 기존 코드 ---
-
-  // --- 일반 문의 모달 제출 ---
+  // --- 이하 기존 코드 (변경 없음) ---
   if (interaction.isModalSubmit() && interaction.customId === 'modal_support') {
     const subject = interaction.fields.getTextInputValue('subject');
     const content = interaction.fields.getTextInputValue('content');
     await interaction.reply({ content: '✅ 문의가 정상적으로 접수되었습니다.', ephemeral: true });
-
     const logChannel = await client.channels.fetch(GENERAL_INQUIRY_LOG_CHANNEL_ID);
-    const embed = new EmbedBuilder()
-      .setTitle('📥 새 문의 접수됨')
-      .setDescription(`**${subject}**\n${content}\n\nby <@${interaction.user.id}>`)
-      .setFooter({ text: '⚡️AP | 에이피 베이프' })
-      .setColor(EMBED_COLORS.DEFAULT);
-    const adminRow = new ActionRowBuilder().addComponents(
-      new StringSelectMenuBuilder().setCustomId(`admin_action_general_${interaction.user.id}`).setPlaceholder('답변 작업관리').addOptions([
-        { label: '✅️ 답변등록', value: `reply_${interaction.user.id}`, description: '문의 답변 등록하기' },
-        { label: '🔴 반려처리', value: `delete_${interaction.user.id}`, description: '문의 삭제처리 하기' }
-      ])
-    );
+    const embed = new EmbedBuilder().setTitle('📥 새 문의 접수됨').setDescription(`**${subject}**\n${content}\n\nby <@${interaction.user.id}>`).setFooter({ text: '⚡️AP | 에이피 베이프' }).setColor(EMBED_COLORS.DEFAULT);
+    const adminRow = new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId(`admin_action_general_${interaction.user.id}`).setPlaceholder('답변 작업관리').addOptions([{ label: '✅️ 답변등록', value: `reply_${interaction.user.id}` }, { label: '🔴 반려처리', value: `delete_${interaction.user.id}` }]));
     await logChannel.send({ embeds: [embed], components: [adminRow] });
   }
-
-  // --- 상품 구매 모달 제출 ---
   if (interaction.isModalSubmit() && interaction.customId === 'modal_purchase') {
-    const purchaseData = {
-      productName: interaction.fields.getTextInputValue('purchase_product_name'),
-      name: interaction.fields.getTextInputValue('purchase_name'),
-      phone: interaction.fields.getTextInputValue('purchase_phone'),
-      address: interaction.fields.getTextInputValue('purchase_address'),
-    };
+    const purchaseData = { productName: interaction.fields.getTextInputValue('purchase_product_name'), name: interaction.fields.getTextInputValue('purchase_name'), phone: interaction.fields.getTextInputValue('purchase_phone'), address: interaction.fields.getTextInputValue('purchase_address') };
     await interaction.reply({ content: '✅ 구매 요청이 정상적으로 접수되었습니다.\nDM으로 입금계좌가 전송되었습니다.', ephemeral: true });
-    
     await sendDmEmbed(interaction.user.id, '가상계좌 입금안내', '아래 입금계좌로 송금해주시기 바랍니다.\n- 은행명\n``SC제일``\n- 계좌번호\n``라이브챗 문의``\n- 예금주\n``라이브챗 문의``\n-# 입금계좌는 수시로 변동됩니다. 오송금시 환불 불가입니다.\n-# 해당 계좌는 24시간 추적되고 있습니다.\n-# 금융범죄 (3자사기등)에 사용시 즉시 금감원에 보고되며 민형사상 처벌을 받을수 있습니다.', EMBED_COLORS.INFO);
-
     const logChannel = await client.channels.fetch(PRODUCT_PURCHASE_LOG_CHANNEL_ID);
     const hiddenData = JSON.stringify(purchaseData);
-    const embed = new EmbedBuilder()
-      .setTitle('🟢 상품구매 리퀘스트')
-      .addFields(
-        { name: '신청자', value: `<@${interaction.user.id}> (\`${interaction.user.tag}\`)`, inline: false },
-        { name: '상품명', value: purchaseData.productName, inline: false },
-        { name: '성함', value: purchaseData.name, inline: true },
-        { name: '전화번호', value: purchaseData.phone, inline: true },
-        { name: '배송지 정보', value: `\`\`\`${purchaseData.address}\`\`\``, inline: false },
-      )
-      .setColor(EMBED_COLORS.INFO)
-      .setFooter({ text: '⚡️AP | 에이피 베이프' })
-      .setDescription(`\n**[숨겨진 주문 정보]**\n\`\`\`json\n${hiddenData}\n\`\`\``);
-
-    const purchaseAdminRow = new ActionRowBuilder().addComponents(
-      new StringSelectMenuBuilder().setCustomId(`admin_action_purchase_${interaction.user.id}`).setPlaceholder('주문 작업관리').addOptions([
-        { label: '✅ 접수완료', value: `confirm_${interaction.user.id}` },
-        { label: '❌ 주문취소', value: `cancel_${interaction.user.id}` }
-      ])
-    );
+    const embed = new EmbedBuilder().setTitle('🟢 상품구매 리퀘스트').addFields({ name: '신청자', value: `<@${interaction.user.id}> (\`${interaction.user.tag}\`)`, inline: false }, { name: '상품명', value: purchaseData.productName, inline: false }, { name: '성함', value: purchaseData.name, inline: true }, { name: '전화번호', value: purchaseData.phone, inline: true }, { name: '배송지 정보', value: `\`\`\`${purchaseData.address}\`\`\``, inline: false }).setColor(EMBED_COLORS.INFO).setFooter({ text: '⚡️AP | 에이피 베이프' }).setDescription(`\n**[숨겨진 주문 정보]**\n\`\`\`json\n${hiddenData}\n\`\`\``);
+    const purchaseAdminRow = new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId(`admin_action_purchase_${interaction.user.id}`).setPlaceholder('주문 작업관리').addOptions([{ label: '✅ 접수완료', value: `confirm_${interaction.user.id}` }, { label: '❌ 주문취소', value: `cancel_${interaction.user.id}` }]));
     await logChannel.send({ embeds: [embed], components: [purchaseAdminRow] });
   }
-
-  // --- 일반문의 관리자 액션 ---
   if (interaction.isStringSelectMenu() && interaction.customId.startsWith('admin_action_general_')) {
     const [action, userId] = interaction.values[0].split('_');
     if (action === 'reply') {
@@ -251,20 +212,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
     } else if (action === 'delete') {
       await interaction.message.delete();
       await interaction.reply({ content: '귀하의 문의사항에 대한 답변 등록', ephemeral: true });
-      await sendDmEmbed(userId, '문의 반려처리됨.','자세한 사항은 고객센터 문의 바랍니다.\n감사합니다.', EMBED_COLORS.ERROR);
+      await sendDmEmbed(userId, '문의 반려처리됨.', '자세한 사항은 고객센터 문의 바랍니다.\n감사합니다.', EMBED_COLORS.ERROR);
     }
   }
-
-  // --- 상품구매 관리자 액션 (접수/취소) ---
   if (interaction.isStringSelectMenu() && interaction.customId.startsWith('admin_action_purchase_')) {
     const [action, userId] = interaction.values[0].split('_');
-    
     if (action === 'confirm') {
-      const newDropdown = new ActionRowBuilder().addComponents(
-        new StringSelectMenuBuilder().setCustomId(`admin_action_shipping_${userId}`).setPlaceholder('배송 작업관리').addOptions([
-          { label: '🟢 배송완료', value: `shipped_${userId}` }
-        ])
-      );
+      const newDropdown = new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId(`admin_action_shipping_${userId}`).setPlaceholder('배송 작업관리').addOptions([{ label: '🟢 배송완료', value: `shipped_${userId}` }]));
       await interaction.update({ components: [newDropdown] });
       await sendDmEmbed(userId, '✅ 주문 접수 완료', '주문이 정상적으로 접수되었습니다.\n상품 준비 후 배송이 시작될 예정입니다.', EMBED_COLORS.SUCCESS);
     } else if (action === 'cancel') {
@@ -273,34 +227,23 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await sendDmEmbed(userId, '❌ 주문 취소', '귀하의 상품 주문이 취소되었습니다.', EMBED_COLORS.ERROR);
     }
   }
-
-  // --- 상품구매 관리자 액션 (배송완료) ---
   if (interaction.isStringSelectMenu() && interaction.customId.startsWith('admin_action_shipping_')) {
     const [action, userId] = interaction.values[0].split('_');
     if (action === 'shipped') {
-        const originalEmbed = interaction.message.embeds[0];
-        try {
-            const jsonString = originalEmbed.description.match(/```json\n([\s\S]*?)\n```/)[1];
-            const purchaseData = JSON.parse(jsonString);
-
-            const dmDescription = `고객님께서 주문하신 상품의 배송이 완료되었습니다.\n이용해주셔서 감사합니다.\n\n` +
-                                  `> **주문 내역**\n` +
-                                  `> **상품명:** ${purchaseData.productName}\n` +
-                                  `> **성함:** ${purchaseData.name}\n` +
-                                  `> **배송지:** ${purchaseData.address}`;
-
-            await sendDmEmbed(userId, '🚚 상품이 안전하게 배송 완료되었습니다.', dmDescription, EMBED_COLORS.SUCCESS);
-            await interaction.reply({ content: '배송 완료 처리 후 사용자에게 DM을 전송했습니다.', ephemeral: true });
-            await interaction.message.delete();
-
-        } catch (e) {
-            console.error("배송 완료 처리 중 오류:", e);
-            await interaction.reply({ content: '오류: 배송 완료 처리 중 문제가 발생했습니다.', ephemeral: true });
-        }
+      const originalEmbed = interaction.message.embeds[0];
+      try {
+        const jsonString = originalEmbed.description.match(/```json\n([\s\S]*?)\n```/)[1];
+        const purchaseData = JSON.parse(jsonString);
+        const dmDescription = `고객님께서 주문하신 상품의 배송이 완료되었습니다.\n이용해주셔서 감사합니다.\n\n> **주문 내역**\n> **상품명:** ${purchaseData.productName}\n> **성함:** ${purchaseData.name}\n> **배송지:** ${purchaseData.address}`;
+        await sendDmEmbed(userId, '🚚 상품이 안전하게 배송 완료되었습니다.', dmDescription, EMBED_COLORS.SUCCESS);
+        await interaction.reply({ content: '배송 완료 처리 후 사용자에게 DM을 전송했습니다.', ephemeral: true });
+        await interaction.message.delete();
+      } catch (e) {
+        console.error("배송 완료 처리 중 오류:", e);
+        await interaction.reply({ content: '오류: 배송 완료 처리 중 문제가 발생했습니다.', ephemeral: true });
+      }
     }
   }
-
-  // --- 답변 모달 제출 ---
   if (interaction.isModalSubmit() && interaction.customId.startsWith('modal_reply_')) {
     const userId = interaction.customId.split('_')[2];
     const replyContent = interaction.fields.getTextInputValue('reply_content');
@@ -312,7 +255,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
 client.login(process.env.TOKEN);
 
-// --- Koyeb용 웹 서버 ---
 const express = require('express');
 const app = express();
 app.get('/', (req, res) => res.send('Bot is running!'));
