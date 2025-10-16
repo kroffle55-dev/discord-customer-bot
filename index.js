@@ -1,4 +1,16 @@
-const { Client, GatewayIntentBits, Events, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
+const { 
+  Client, 
+  GatewayIntentBits, 
+  Events, 
+  EmbedBuilder, 
+  ActionRowBuilder,          // ActionRowBuilder는 그대로 사용
+  ButtonBuilder,             // ButtonBuilder 추가
+  ButtonStyle,               // ButtonStyle 추가
+  StringSelectMenuBuilder, 
+  ModalBuilder, 
+  TextInputBuilder, 
+  TextInputStyle 
+} = require('discord.js');
 require('dotenv').config();
 
 const client = new Client({
@@ -27,15 +39,15 @@ client.on(Events.MessageCreate, async (message) => {
       .setFooter({ text: '⚡️AP | 에이피 베이프' })
       .setColor(0x000000);
 
+    // --- 여기부터 수정 ---
     const row = new ActionRowBuilder()
-        .addComponents(
-            {
-              type: 2, // 버튼
-              label: 'ℹ️ 문의하기',
-              style: 2, // 회색 버튼
-              custom_id: 'open_inquiry_selector'
-            }
-        );
+      .addComponents(
+        new ButtonBuilder()
+          .setCustomId('open_inquiry_selector')
+          .setLabel('ℹ️ 문의하기')
+          .setStyle(ButtonStyle.Secondary) // style: 2는 ButtonStyle.Secondary에 해당합니다.
+      );
+    // --- 여기까지 수정 ---
 
     await message.channel.send({
       embeds: [embed],
@@ -159,6 +171,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
         }
 
         const logChannel = await client.channels.fetch(PRODUCT_PURCHASE_LOG_CHANNEL_ID);
+        
+        // 유저가 입력한 정보를 JSON 형태로 저장하여 나중에 DM 보낼 때 사용
+        const purchaseDataForDm = { productType, name, phone, productName, address };
+        const hiddenData = JSON.stringify(purchaseDataForDm);
+
         const embed = new EmbedBuilder()
             .setTitle('🛒 상품구매 리퀘스트가 제출되었습니다')
             .addFields(
@@ -170,8 +187,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 { name: '배송주소', value: address, inline: false },
             )
             .setColor(0x5865F2)
-            .setFooter({ text: '⚡️AP | 에이피 베이프' });
-        
+            .setFooter({ text: '⚡️AP | 에이피 베이프' })
+            .setDescription(`\n\n**[숨겨진 주문 정보]**\n\`\`\`json\n${hiddenData}\n\`\`\``); // 나중에 파싱할 데이터를 임베드 설명에 추가
+
         const purchaseAdminRow = new ActionRowBuilder().addComponents(
             new StringSelectMenuBuilder()
                 .setCustomId(`admin_action_purchase_${interaction.user.id}`)
@@ -181,10 +199,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
                     { label: '❌ 주문취소', value: `cancel_${interaction.user.id}`, description: '주문을 취소하고 유저에게 알립니다.' }
                 ])
         );
-
-        // 유저가 입력한 정보를 JSON 형태로 저장하여 나중에 DM 보낼 때 사용
-        const purchaseData = JSON.stringify({ productType, name, phone, productName, address });
-        embed.setDescription(`\`\`\`json\n${purchaseData}\n\`\`\``); // 임베드에 숨겨진 데이터로 저장
 
         await logChannel.send({ embeds: [embed], components: [purchaseAdminRow] });
     }
@@ -222,27 +236,33 @@ client.on(Events.InteractionCreate, async (interaction) => {
         const [action, userId] = selected.split('_');
         const originalEmbed = interaction.message.embeds[0];
 
-        // 임베드에 숨겨둔 주문정보 JSON 파싱
-        const purchaseData = JSON.parse(originalEmbed.description.replace(/```json\n|\n```/g, ''));
+        try {
+            // 임베드 설명에서 JSON 데이터 추출 및 파싱
+            const jsonString = originalEmbed.description.match(/```json\n([\s\S]*?)\n```/)[1];
+            const purchaseData = JSON.parse(jsonString);
 
-        if (action === 'confirm') {
-            await interaction.message.delete();
-            await interaction.reply({ content: '해당 주문을 접수완료 처리했습니다.', ephemeral: true });
-            
-            const dmContent = `**✅ 상품 접수가 완료되었습니다.**\n\n` +
-                              `**상품종류:** ${purchaseData.productType}\n` +
-                              `**성함:** ${purchaseData.name}\n` +
-                              `**전화번호:** ${purchaseData.phone}\n` +
-                              `**상품명:** ${purchaseData.productName}\n` +
-                              `**배송주소:** ${purchaseData.address}`;
+            if (action === 'confirm') {
+                await interaction.message.delete();
+                await interaction.reply({ content: '해당 주문을 접수완료 처리했습니다.', ephemeral: true });
+                
+                const dmContent = `**✅ 상품 접수가 완료되었습니다.**\n\n` +
+                                  `**상품종류:** ${purchaseData.productType}\n` +
+                                  `**성함:** ${purchaseData.name}\n` +
+                                  `**전화번호:** ${purchaseData.phone}\n` +
+                                  `**상품명:** ${purchaseData.productName}\n` +
+                                  `**배송주소:** ${purchaseData.address}`;
 
-            await client.users.send(userId, { content: dmContent });
-        }
+                await client.users.send(userId, { content: dmContent });
+            }
 
-        if (action === 'cancel') {
-            await interaction.message.delete();
-            await interaction.reply({ content: '해당 주문을 취소 처리했습니다.', ephemeral: true });
-            await client.users.send(userId, { content: '**❌ 귀하의 상품 주문이 취소되었습니다.**\n-# ⚡️AP | 에이피 베이프' });
+            if (action === 'cancel') {
+                await interaction.message.delete();
+                await interaction.reply({ content: '해당 주문을 취소 처리했습니다.', ephemeral: true });
+                await client.users.send(userId, { content: '**❌ 귀하의 상품 주문이 취소되었습니다.**\n-# ⚡️AP | 에이피 베이프' });
+            }
+        } catch (e) {
+            console.error("주문 정보 처리 중 오류 발생:", e);
+            await interaction.reply({ content: '오류: 주문 정보를 처리하는 데 실패했습니다. 임베드 형식을 확인해주세요.', ephemeral: true });
         }
     }
   
@@ -259,7 +279,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       });
   
       await client.users.send(userId, {
-        content: `**🟢 문의 답변이 등록됨**\n\n${replyContent}\n\n에이피 베이프를 이용해주시는 고객님, 감사합니다.`
+        content: `**🟢 문의에 대한 답변이 도착했습니다!**\n\n${replyContent}\n\n-# ⚡️AP | 에이피 베이프`
       });
     }
 });
